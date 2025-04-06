@@ -21,7 +21,7 @@ func Parse(data []byte) (*Request, error) {
 		return nil, errors.New("invalid request: no request line")
 	}
 
-	requestLine := strings.TrimSpace(lines[0])
+	requestLine := lines[0]
 	headerLines := lines[1:]
 
 	method, path, err := parseStartLine(requestLine)

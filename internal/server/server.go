@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/blatessa/sniffle/internal/proxy"
 	"github.com/blatessa/sniffle/internal/request"
 )
 
@@ -43,10 +44,18 @@ func handleConnection(c net.Conn) {
 		return
 	}
 
-	parsed, err := request.Parse(buf)
+	parsedRequest, err := request.Parse(buf)
 	if err != nil {
 		log.Println("Error parsing request:", err)
 		return
 	}
-	fmt.Printf("%#v\n", parsed)
+
+	proxyClient := proxy.Proxy{}
+	response, err := proxyClient.Forward(parsedRequest)
+	if err != nil {
+		log.Println("Error forwarding request:", err)
+		return
+	}
+
+	fmt.Printf("%#v\n", response)
 }
