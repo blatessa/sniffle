@@ -7,7 +7,6 @@ import (
 	"net"
 
 	"github.com/blatessa/sniffle/internal/proxy"
-	"github.com/blatessa/sniffle/internal/request"
 )
 
 func Start(address string) error {
@@ -33,7 +32,7 @@ func Start(address string) error {
 func handleConnection(c net.Conn) {
 	defer c.Close()
 
-	buf := make([]byte, 1024)
+	buf := make([]byte, 65536)
 	n, err := c.Read(buf)
 	if err != nil && err != io.EOF {
 		log.Println("Error reading from connection:", err)
@@ -44,18 +43,17 @@ func handleConnection(c net.Conn) {
 		return
 	}
 
-	parsedRequest, err := request.Parse(buf)
-	if err != nil {
-		log.Println("Error parsing request:", err)
-		return
-	}
-
 	proxyClient := proxy.Proxy{}
-	response, err := proxyClient.Forward(parsedRequest)
+	rawResp, err := proxyClient.Forward(buf[:n])
 	if err != nil {
 		log.Println("Error forwarding request:", err)
 		return
 	}
 
-	fmt.Printf("%#v\n", response)
+	_, err = c.Write(rawResp)
+	if err != nil {
+		log.Println("Error writing response to client:", err)
+	}
+
+	proxyClient.Dump()
 }
