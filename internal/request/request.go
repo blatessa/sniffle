@@ -2,6 +2,7 @@ package request
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 )
 
@@ -23,7 +24,11 @@ func Parse(data []byte) (*Request, error) {
 	requestLine := strings.TrimSpace(lines[0])
 	headerLines := lines[1:]
 
-	method, path := parseStartLine(requestLine)
+	method, path, err := parseStartLine(requestLine)
+	if err != nil {
+		return nil, err
+	}
+
 	headerMap := parseHeaders(headerLines)
 
 	request.Method = method
@@ -33,14 +38,24 @@ func Parse(data []byte) (*Request, error) {
 	return request, nil
 }
 
-func parseStartLine(requestLine string) (string, string) {
+func parseStartLine(requestLine string) (string, string, error) {
 
 	parts := strings.SplitN(requestLine, " ", 3)
+	if len(parts) < 2 {
+		return "", "", errors.New("malformed request line")
+	}
 
 	method := parts[0]
-	path := parts[1]
+	uri := parts[1]
 
-	return method, path
+	u, err := url.Parse(uri)
+	if err != nil {
+		return "", "", errors.New("unable to parse URL")
+	}
+
+	parsedPath := u.Path
+
+	return method, parsedPath, nil
 }
 
 func parseHeaders(lines []string) map[string]string {
